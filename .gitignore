@@ -1,0 +1,23 @@
+# Dependencies
+sprint1/node_modules/
+sprint2/node_modules/
+sprint3/node_modules/
+**/node_modules/
+
+# Next.js build
+sprint1/.next/
+sprint2/.next/
+sprint3/.next/
+**/.next/
+
+# SQLite dev database
+sprint1/prisma/dev.db
+sprint1/prisma/dev.db-journal
+sprint1/dev.db
+**/dev.db
+**/dev.db-journal
+
+# Env files
+**/.env
+**/.env.local
+**/.env.production
