@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  slug     String    @unique
+  season   String    // "summer" | "winter" | "demi"
+  products Product[]
+}
+
+model Product {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  material    String
+  color       String
+  imageUrl    String        @default("/placeholder.jpg")
+  isActive    Boolean       @default(true)
+  categoryId  Int
+  category    Category      @relation(fields: [categoryId], references: [id])
+  sizes       ProductSize[]
+  createdAt   DateTime      @default(now())
+}
+
+model ProductSize {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      Int     // 35, 36, 37 ... 42
+  quantity  Int     @default(0)
+}
