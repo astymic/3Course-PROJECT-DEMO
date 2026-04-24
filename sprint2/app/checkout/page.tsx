@@ -7,11 +7,12 @@ import Link from 'next/link'
 type NpCity = { Ref: string; Description: string }
 type NpWarehouse = { Ref: string; Description: string; Number: string }
 
+const inputCls = "w-full border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-200 bg-white"
+
 export default function CheckoutPage() {
     const { items, total, clear } = useCart()
     const router = useRouter()
 
-    // Form state
     const [name, setName] = useState('')
     const [phone, setPhone] = useState('')
     const [email, setEmail] = useState('')
@@ -24,48 +25,80 @@ export default function CheckoutPage() {
     const [cityQuery, setCityQuery] = useState('')
     const [cities, setCities] = useState<NpCity[]>([])
     const [selectedCity, setSelectedCity] = useState<NpCity | null>(null)
+    const [showCities, setShowCities] = useState(false)
+
     const [warehouseQuery, setWarehouseQuery] = useState('')
     const [warehouses, setWarehouses] = useState<NpWarehouse[]>([])
     const [selectedWh, setSelectedWh] = useState<NpWarehouse | null>(null)
+    const [showWarehouses, setShowWarehouses] = useState(false)
     const [npLoading, setNpLoading] = useState(false)
 
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState('')
 
+    // Phone: allow only digits, +, -, space
+    const handlePhone = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value.replace(/[^\d+\-\s()]/g, '')
+        setPhone(val)
+    }
+
     // City search
     const searchCities = useCallback(async (q: string) => {
-        if (q.length < 2) { setCities([]); return }
+        if (q.length < 2) { setCities([]); setShowCities(false); return }
         setNpLoading(true)
         try {
             const res = await fetch(`/api/nova-poshta/cities?q=${encodeURIComponent(q)}`)
             const data = await res.json()
-            setCities(data.slice(0, 8))
+            setCities(data.slice(0, 10))
+            setShowCities(true)
         } catch { setCities([]) }
         setNpLoading(false)
     }, [])
 
     useEffect(() => {
-        const t = setTimeout(() => searchCities(cityQuery), 400)
+        if (selectedCity) return // Don't search if city already selected
+        const t = setTimeout(() => searchCities(cityQuery), 300)
         return () => clearTimeout(t)
-    }, [cityQuery, searchCities])
+    }, [cityQuery, selectedCity, searchCities])
 
-    // Warehouse search
-    const searchWarehouses = useCallback(async (cityRef: string, q: string) => {
+    // Load warehouses immediately after city is selected
+    const loadWarehouses = useCallback(async (cityRef: string, q: string) => {
         setNpLoading(true)
+        setWarehouses([])
         try {
-            const res = await fetch(`/api/nova-poshta/warehouses?cityRef=${cityRef}&q=${encodeURIComponent(q)}`)
+            const res = await fetch(`/api/nova-poshta/warehouses?cityRef=${encodeURIComponent(cityRef)}&q=${encodeURIComponent(q)}`)
             const data = await res.json()
-            setWarehouses(data.slice(0, 15))
+            setWarehouses(Array.isArray(data) ? data : [])
+            setShowWarehouses(true)
         } catch { setWarehouses([]) }
         setNpLoading(false)
     }, [])
 
+    // Reload warehouses when query changes
     useEffect(() => {
-        if (selectedCity) {
-            const t = setTimeout(() => searchWarehouses(selectedCity.Ref, warehouseQuery), 400)
-            return () => clearTimeout(t)
-        }
-    }, [warehouseQuery, selectedCity, searchWarehouses])
+        if (!selectedCity || selectedWh) return
+        const t = setTimeout(() => loadWarehouses(selectedCity.Ref, warehouseQuery), 300)
+        return () => clearTimeout(t)
+    }, [warehouseQuery, selectedCity, selectedWh, loadWarehouses])
+
+    const selectCity = (c: NpCity) => {
+        setSelectedCity(c)
+        setCityQuery(c.Description)
+        setCities([])
+        setShowCities(false)
+        setSelectedWh(null)
+        setWarehouseQuery('')
+        loadWarehouses(c.Ref, '')
+    }
+
+    const clearCity = () => {
+        setSelectedCity(null)
+        setCityQuery('')
+        setCities([])
+        setSelectedWh(null)
+        setWarehouses([])
+        setShowWarehouses(false)
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -88,35 +121,19 @@ export default function CheckoutPage() {
             })),
         }
 
-        const res = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        const order = await res.json()
-
-        if (!res.ok) { setError(order.error ?? 'Помилка'); setSubmitting(false); return }
-
-        if (payment === 'liqpay') {
-            // Get LiqPay form and submit it
-            const lpRes = await fetch('/api/liqpay', {
+        try {
+            const res = await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: order.id, amount: order.total, description: `Замовлення LiLu #${order.id}` }),
+                body: JSON.stringify(body),
             })
-            const { data, signature } = await lpRes.json()
-            // Submit LiqPay form programmatically
-            const form = document.createElement('form')
-            form.method = 'POST'
-            form.action = 'https://www.liqpay.ua/api/3/checkout'
-            form.acceptCharset = 'utf-8'
-                ;[{ name: 'data', value: data }, { name: 'signature', value: signature }].forEach(({ name, value }) => {
-                    const input = document.createElement('input')
-                    input.type = 'hidden'; input.name = name; input.value = value
-                    form.appendChild(input)
-                })
-            document.body.appendChild(form)
-            form.submit()
-            clear()
-        } else {
+            const order = await res.json()
+            if (!res.ok) { setError(order.error ?? 'Помилка'); setSubmitting(false); return }
             clear()
             router.push(`/order/${order.id}`)
+        } catch {
+            setError('Помилка з\'єднання з сервером')
+            setSubmitting(false)
         }
     }
 
@@ -150,22 +167,36 @@ export default function CheckoutPage() {
                             <h2 className="font-bold text-stone-800 mb-4">Контактні дані</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm text-stone-500 mb-1">ПІБ *</label>
-                                    <input value={name} onChange={e => setName(e.target.value)} required
-                                        className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-stone-400"
-                                        placeholder="Іваненко Іван Іванович" />
+                                    <label className="block text-sm text-stone-500 mb-1.5">ПІБ *</label>
+                                    <input
+                                        value={name} onChange={e => setName(e.target.value)} required
+                                        className={inputCls} placeholder="Іваненко Іван Іванович"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-stone-500 mb-1">Телефон *</label>
-                                    <input value={phone} onChange={e => setPhone(e.target.value)} required
-                                        className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-stone-400"
-                                        placeholder="+380" />
+                                    <label className="block text-sm text-stone-500 mb-1.5">Телефон *</label>
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={handlePhone}
+                                        onKeyDown={e => {
+                                            // Block letters (allow digits, +, -, space, backspace, arrows, etc.)
+                                            if (e.key.length === 1 && /[a-zA-Zа-яА-ЯёЁіІїЇєЄ]/.test(e.key)) {
+                                                e.preventDefault()
+                                            }
+                                        }}
+                                        required
+                                        inputMode="tel"
+                                        className={inputCls}
+                                        placeholder="+380 XX XXX XX XX"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-stone-500 mb-1">Email</label>
-                                    <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                                        className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-stone-400"
-                                        placeholder="email@example.com" />
+                                    <label className="block text-sm text-stone-500 mb-1.5">Email</label>
+                                    <input
+                                        type="email" value={email} onChange={e => setEmail(e.target.value)}
+                                        className={inputCls} placeholder="email@example.com"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -180,57 +211,103 @@ export default function CheckoutPage() {
                                 ].map(opt => (
                                     <button key={opt.value} type="button"
                                         onClick={() => setDelivery(opt.value as 'nova_poshta' | 'courier')}
-                                        className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${delivery === opt.value ? 'border-stone-800 bg-stone-800 text-white' : 'border-stone-200 text-stone-600 hover:border-stone-400'}`}>
+                                        className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${delivery === opt.value
+                                                ? 'border-stone-800 bg-stone-800 text-white'
+                                                : 'border-stone-200 text-stone-600 hover:border-stone-400'
+                                            }`}>
                                         {opt.label}
                                     </button>
                                 ))}
                             </div>
 
                             {delivery === 'nova_poshta' && (
-                                <div className="space-y-3">
-                                    {/* City search */}
+                                <div className="space-y-4">
+                                    {/* City */}
                                     <div className="relative">
-                                        <label className="block text-sm text-stone-500 mb-1">Місто *</label>
-                                        <input
-                                            value={selectedCity ? selectedCity.Description : cityQuery}
-                                            onChange={e => { setSelectedCity(null); setSelectedWh(null); setCityQuery(e.target.value); setWarehouses([]) }}
-                                            className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-stone-400"
-                                            placeholder="Введіть назву міста..."
-                                        />
-                                        {npLoading && <span className="absolute right-3 top-8 text-xs text-stone-400">...</span>}
-                                        {!selectedCity && cities.length > 0 && (
-                                            <div className="absolute z-10 w-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                        <label className="block text-sm text-stone-500 mb-1.5">
+                                            Місто * {npLoading && <span className="text-stone-400 text-xs">(завантаження...)</span>}
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                value={cityQuery}
+                                                onChange={e => {
+                                                    setCityQuery(e.target.value)
+                                                    if (selectedCity) clearCity()
+                                                }}
+                                                onFocus={() => { if (cities.length > 0) setShowCities(true) }}
+                                                className={inputCls + (selectedCity ? ' border-green-400 bg-green-50' : '')}
+                                                placeholder="Введіть назву міста..."
+                                                autoComplete="off"
+                                            />
+                                            {selectedCity && (
+                                                <button type="button" onClick={clearCity}
+                                                    className="absolute right-2.5 top-2 text-stone-400 hover:text-stone-700 font-bold text-sm">
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {showCities && cities.length > 0 && !selectedCity && (
+                                            <div className="absolute z-20 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-xl overflow-hidden">
                                                 {cities.map(c => (
                                                     <button key={c.Ref} type="button"
-                                                        onClick={() => { setSelectedCity(c); setCityQuery(c.Description); setCities([]); searchWarehouses(c.Ref, '') }}
-                                                        className="w-full text-left px-3 py-2 text-sm hover:bg-stone-50 transition-colors">
-                                                        {c.Description}
+                                                        onMouseDown={() => selectCity(c)}
+                                                        className="w-full text-left px-4 py-2.5 text-sm text-stone-800 hover:bg-amber-50 hover:text-amber-800 transition-colors border-b border-stone-50 last:border-0">
+                                                        📍 {c.Description}
                                                     </button>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Warehouse search */}
+                                    {/* Warehouse — shows immediately after city selected */}
                                     {selectedCity && (
                                         <div className="relative">
-                                            <label className="block text-sm text-stone-500 mb-1">Відділення *</label>
-                                            <input
-                                                value={selectedWh ? `№${selectedWh.Number} — ${selectedWh.Description}` : warehouseQuery}
-                                                onChange={e => { setSelectedWh(null); setWarehouseQuery(e.target.value) }}
-                                                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-stone-400"
-                                                placeholder="Пошук відділення..."
-                                            />
-                                            {!selectedWh && warehouses.length > 0 && (
-                                                <div className="absolute z-10 w-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
-                                                    {warehouses.map(w => (
-                                                        <button key={w.Ref} type="button"
-                                                            onClick={() => { setSelectedWh(w); setWarehouses([]) }}
-                                                            className="w-full text-left px-3 py-2 text-sm hover:bg-stone-50 transition-colors border-b border-stone-50 last:border-0">
-                                                            <span className="font-medium">№{w.Number}</span> — {w.Description}
-                                                        </button>
-                                                    ))}
+                                            <label className="block text-sm text-stone-500 mb-1.5">
+                                                Відділення * {npLoading && <span className="text-stone-400 text-xs">(завантаження...)</span>}
+                                            </label>
+                                            {selectedWh ? (
+                                                <div className="flex items-center gap-2 border border-green-400 bg-green-50 rounded-lg px-3 py-2">
+                                                    <span className="text-sm text-stone-800 flex-1">
+                                                        №{selectedWh.Number} — {selectedWh.Description}
+                                                    </span>
+                                                    <button type="button" onClick={() => { setSelectedWh(null); setWarehouseQuery(''); loadWarehouses(selectedCity.Ref, '') }}
+                                                        className="text-stone-400 hover:text-stone-700 font-bold text-sm flex-shrink-0">
+                                                        ✕
+                                                    </button>
                                                 </div>
+                                            ) : (
+                                                <>
+                                                    <input
+                                                        value={warehouseQuery}
+                                                        onChange={e => { setWarehouseQuery(e.target.value); setShowWarehouses(true) }}
+                                                        onFocus={() => setShowWarehouses(true)}
+                                                        className={inputCls}
+                                                        placeholder="Пошук відділення (або оберіть зі списку)..."
+                                                        autoComplete="off"
+                                                    />
+                                                    {showWarehouses && warehouses.length > 0 && (
+                                                        <div className="absolute z-20 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-xl max-h-56 overflow-y-auto">
+                                                            {warehouses
+                                                                .filter(w =>
+                                                                    !warehouseQuery ||
+                                                                    w.Description.toLowerCase().includes(warehouseQuery.toLowerCase()) ||
+                                                                    w.Number.includes(warehouseQuery)
+                                                                )
+                                                                .map(w => (
+                                                                    <button key={w.Ref} type="button"
+                                                                        onMouseDown={() => { setSelectedWh(w); setShowWarehouses(false) }}
+                                                                        className="w-full text-left px-4 py-2.5 text-sm text-stone-800 hover:bg-amber-50 hover:text-amber-800 transition-colors border-b border-stone-50 last:border-0">
+                                                                        <span className="font-semibold">№{w.Number}</span> — {w.Description}
+                                                                    </button>
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    )}
+                                                    {showWarehouses && !npLoading && warehouses.length === 0 && (
+                                                        <p className="text-xs text-stone-400 mt-1">Відділень не знайдено</p>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     )}
@@ -239,10 +316,9 @@ export default function CheckoutPage() {
 
                             {delivery === 'courier' && (
                                 <div>
-                                    <label className="block text-sm text-stone-500 mb-1">Адреса доставки *</label>
+                                    <label className="block text-sm text-stone-500 mb-1.5">Адреса доставки *</label>
                                     <input value={address} onChange={e => setAddress(e.target.value)}
-                                        className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-stone-400"
-                                        placeholder="Вулиця, будинок, квартира" />
+                                        className={inputCls} placeholder="Вулиця, будинок, квартира" />
                                 </div>
                             )}
                         </div>
@@ -251,17 +327,24 @@ export default function CheckoutPage() {
                         <div className="bg-white rounded-xl border border-stone-100 p-6">
                             <h2 className="font-bold text-stone-800 mb-4">Оплата</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {[
-                                    { value: 'liqpay', label: '💳 LiqPay (картка)', desc: 'Visa/Mastercard, PrivatBank' },
-                                    { value: 'cash_on_delivery', label: '📬 Накладений платіж', desc: 'Оплата при отриманні + комісія НП' },
-                                ].map(opt => (
-                                    <button key={opt.value} type="button"
-                                        onClick={() => setPayment(opt.value as 'liqpay' | 'cash_on_delivery')}
-                                        className={`text-left p-4 rounded-xl border transition-all ${payment === opt.value ? 'border-amber-500 bg-amber-50' : 'border-stone-200 hover:border-stone-300'}`}>
-                                        <div className="font-medium text-stone-800 text-sm">{opt.label}</div>
-                                        <div className="text-xs text-stone-400 mt-0.5">{opt.desc}</div>
-                                    </button>
-                                ))}
+                                {/* LiqPay — stub, disabled */}
+                                <div className="relative">
+                                    <div
+                                        className="text-left p-4 rounded-xl border border-stone-100 bg-stone-50 opacity-60 cursor-not-allowed"
+                                    >
+                                        <div className="font-medium text-stone-600 text-sm">💳 LiqPay (картка)</div>
+                                        <div className="text-xs text-stone-400 mt-0.5">Visa/Mastercard</div>
+                                        <div className="text-xs text-amber-600 mt-1 font-medium">Незабаром</div>
+                                    </div>
+                                </div>
+
+                                {/* Cash on delivery */}
+                                <button type="button"
+                                    onClick={() => setPayment('cash_on_delivery')}
+                                    className="text-left p-4 rounded-xl border transition-all border-amber-500 bg-amber-50">
+                                    <div className="font-medium text-stone-800 text-sm">📬 Накладений платіж</div>
+                                    <div className="text-xs text-stone-400 mt-0.5">Оплата при отриманні + комісія НП</div>
+                                </button>
                             </div>
                         </div>
 
@@ -270,10 +353,14 @@ export default function CheckoutPage() {
                             <label className="block text-sm font-medium text-stone-700 mb-2">Коментар до замовлення</label>
                             <textarea value={notes} onChange={e => setNotes(e.target.value)}
                                 rows={2} placeholder="Побажання або уточнення..."
-                                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-stone-400 resize-none" />
+                                className={inputCls + ' resize-none'} />
                         </div>
 
-                        {error && <p className="text-red-500 text-sm bg-red-50 border border-red-100 rounded-lg px-4 py-2">{error}</p>}
+                        {error && (
+                            <p className="text-red-600 text-sm bg-red-50 border border-red-100 rounded-lg px-4 py-3">
+                                ⚠️ {error}
+                            </p>
+                        )}
                     </div>
 
                     {/* Right: Summary */}
@@ -283,8 +370,8 @@ export default function CheckoutPage() {
                             <div className="space-y-2 mb-4">
                                 {items.map(i => (
                                     <div key={`${i.productId}-${i.size}`} className="flex justify-between text-sm text-stone-600">
-                                        <span className="truncate mr-2">{i.name} р.{i.size} ×{i.quantity}</span>
-                                        <span className="flex-shrink-0">{(i.price * i.quantity).toLocaleString()} ₴</span>
+                                        <span className="truncate mr-2 text-stone-700">{i.name} р.{i.size} ×{i.quantity}</span>
+                                        <span className="flex-shrink-0 font-medium">{(i.price * i.quantity).toLocaleString()} ₴</span>
                                     </div>
                                 ))}
                             </div>
@@ -293,13 +380,11 @@ export default function CheckoutPage() {
                                     <span>Разом</span>
                                     <span>{total.toLocaleString()} ₴</span>
                                 </div>
-                                {payment === 'cash_on_delivery' && (
-                                    <p className="text-xs text-stone-400 mt-1">+ комісія Нової Пошти при отриманні</p>
-                                )}
+                                <p className="text-xs text-stone-400 mt-1">+ комісія Нової Пошти при отриманні</p>
                             </div>
                             <button type="submit" disabled={submitting}
                                 className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-stone-900 font-bold py-3 rounded-xl transition-colors">
-                                {submitting ? 'Обробка...' : payment === 'liqpay' ? 'Перейти до оплати →' : 'Підтвердити замовлення →'}
+                                {submitting ? 'Обробка...' : 'Підтвердити замовлення →'}
                             </button>
                         </div>
                     </div>
