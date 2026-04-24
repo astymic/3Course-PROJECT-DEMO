@@ -17,7 +17,3 @@ sprint1/dev.db
 **/dev.db
 **/dev.db-journal
 
-# Env files
-**/.env
-**/.env.local
-**/.env.production
