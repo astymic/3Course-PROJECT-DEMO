@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Sprint 1 models ─────────────────────────────────
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  slug     String    @unique
+  season   String
+  products Product[]
+}
+
+model Product {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  material    String
+  color       String
+  imageUrl    String        @default("/placeholder.jpg")
+  isActive    Boolean       @default(true)
+  categoryId  Int
+  category    Category      @relation(fields: [categoryId], references: [id])
+  sizes       ProductSize[]
+  orderItems  OrderItem[]
+  createdAt   DateTime      @default(now())
+}
+
+model ProductSize {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      Int
+  quantity  Int     @default(0)
+}
+
+// ── Sprint 2 models ─────────────────────────────────
+model Order {
+  id              Int         @id @default(autoincrement())
+  // Customer info
+  customerName    String
+  customerPhone   String
+  customerEmail   String      @default("")
+  // Delivery
+  deliveryMethod  String      // "nova_poshta" | "courier"
+  npCity          String      @default("")
+  npWarehouse     String      @default("")
+  npWarehouseRef  String      @default("")
+  address         String      @default("")
+  // Payment
+  paymentMethod   String      // "liqpay" | "cash_on_delivery"
+  paymentStatus   String      @default("pending") // "pending" | "paid" | "failed"
+  liqpayOrderId   String      @default("")
+  // Order
+  status          String      @default("new") // "new" | "processing" | "shipped" | "delivered" | "cancelled"
+  total           Float
+  notes           String      @default("")
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  size      Int
+  quantity  Int
+  price     Float   // price at the time of order
+}
