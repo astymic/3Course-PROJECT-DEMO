@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
                 methodProperties: {
                     CityRef: cityRef,
                     FindByString: q,
-                    Limit: 50,
+                    Limit: 500,
                 },
             }),
         })

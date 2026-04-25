@@ -97,22 +97,21 @@ export default function CheckoutPage() {
         return () => clearTimeout(t)
     }, [cityQuery, selectedCity, searchCities])
 
-    // Load warehouses immediately after city is selected
+    // Load warehouses — does NOT clear existing list during reload to avoid flicker
     const loadWarehouses = useCallback(async (cityRef: string, q: string) => {
         setNpLoading(true)
-        setWarehouses([])
         try {
             const res = await fetch(`/api/nova-poshta/warehouses?cityRef=${encodeURIComponent(cityRef)}&q=${encodeURIComponent(q)}`)
             const data = await res.json()
             setWarehouses(Array.isArray(data) ? data : [])
             setShowWarehouses(true)
-        } catch { setWarehouses([]) }
+        } catch { /* keep previous list on error */ }
         setNpLoading(false)
     }, [])
 
-    // Reload warehouses when query changes
+    // Reload warehouses on query change ONLY (not on city select — city select calls loadWarehouses directly)
     useEffect(() => {
-        if (!selectedCity || selectedWh) return
+        if (!selectedCity || selectedWh || !warehouseQuery) return
         const t = setTimeout(() => loadWarehouses(selectedCity.Ref, warehouseQuery), 300)
         return () => clearTimeout(t)
     }, [warehouseQuery, selectedCity, selectedWh, loadWarehouses])
@@ -372,21 +371,25 @@ export default function CheckoutPage() {
                                                         autoComplete="off"
                                                     />
                                                     {showWarehouses && warehouses.length > 0 && (
-                                                        <div className="absolute z-20 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-xl max-h-56 overflow-y-auto">
-                                                            {warehouses
-                                                                .filter(w =>
+                                                        <div className="absolute z-20 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-xl max-h-72 overflow-y-auto">
+                                                            {(() => {
+                                                                const filtered = warehouses.filter(w =>
                                                                     !warehouseQuery ||
                                                                     w.Description.toLowerCase().includes(warehouseQuery.toLowerCase()) ||
                                                                     w.Number.includes(warehouseQuery)
                                                                 )
-                                                                .map(w => (
-                                                                    <button key={w.Ref} type="button"
-                                                                        onMouseDown={() => { setSelectedWh(w); setShowWarehouses(false) }}
-                                                                        className="w-full text-left px-4 py-2.5 text-sm text-stone-800 hover:bg-amber-50 hover:text-amber-800 transition-colors border-b border-stone-50 last:border-0">
-                                                                        <span className="font-semibold">№{w.Number}</span> — {w.Description}
-                                                                    </button>
-                                                                ))
-                                                            }
+                                                                return filtered.length > 0 ? (
+                                                                    filtered.map(w => (
+                                                                        <button key={w.Ref} type="button"
+                                                                            onMouseDown={() => { setSelectedWh(w); setShowWarehouses(false) }}
+                                                                            className="w-full text-left px-4 py-2.5 text-sm text-stone-800 hover:bg-amber-50 hover:text-amber-800 transition-colors border-b border-stone-50 last:border-0">
+                                                                            <span className="font-semibold">№{w.Number}</span> — {w.Description}
+                                                                        </button>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="px-4 py-3 text-sm text-stone-400">Відділень за запитом не знайдено</div>
+                                                                )
+                                                            })()}
                                                         </div>
                                                     )}
                                                     {showWarehouses && !npLoading && warehouses.length === 0 && (
