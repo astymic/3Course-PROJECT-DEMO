@@ -2,7 +2,6 @@
 
 > **Проєкт:** LiLu E-Commerce Platform
 > **Стек:** Next.js 16, Prisma 5, SQLite, Tailwind CSS
-> **Структура:** Монорепозиторій, спринтова розробка
 
 ---
 
@@ -21,39 +20,24 @@ LiLu — веб-платформа для продажу взуття власн
 ## 2. Структура проєкту
 
 ```
-demo/
-├── docs/               ← документація (цей файл)
-├── sprint1/            ← базовий каталог і кошик
-└── sprint2/            ← авторизація, кабінет, чат
-    ├── app/
-    │   ├── page.tsx              Головна (каталог)
-    │   ├── checkout/             Оформлення замовлення
-    │   ├── account/              Особистий кабінет
-    │   ├── login/                Сторінка входу
-    │   ├── register/             Сторінка реєстрації
-    │   ├── admin/                Адмін-панель
-    │   │   ├── page.tsx          Управління товарами
-    │   │   ├── orders/           Управління замовленнями
-    │   │   ├── users/            Управління користувачами
-    │   │   └── chat/             Чат-підтримка (адмін)
-    │   └── api/                  API-маршрути
-    │       ├── auth/             Авторизація
-    │       ├── products/         CRUD товарів
-    │       ├── orders/           Замовлення
-    │       ├── categories/       Категорії
-    │       ├── nova-poshta/      Інтеграція з НП
-    │       ├── chat/             Чат (покупець)
-    │       └── admin/            Адмін API
-    ├── components/               React компоненти
-    ├── context/                  CartContext
-    ├── lib/
-    │   ├── auth.ts               Авторизація (хеш, токени)
-    │   └── prisma.ts             Prisma клієнт (singleton)
-    ├── prisma/
-    │   ├── schema.prisma         Схема БД
-    │   ├── seed.js               Початкові дані + адмін
-    │   └── dev.db                SQLite база даних
-    └── proxy.ts                  Захист маршрутів (Edge Runtime)
+app/
+├── page.tsx              Головна (каталог)
+├── checkout/             Оформлення замовлення
+├── account/              Особистий кабінет
+├── login/ register/      Авторизація
+├── admin/                Адмін-панель (товари, замовлення, користувачі, чат)
+└── api/                  API-маршрути (auth, products, orders, chat, nova-poshta)
+
+components/               React-компоненти
+context/                  CartContext
+lib/
+├── auth.ts               Авторизація (хеш, токени)
+└── prisma.ts             Prisma клієнт (singleton)
+prisma/
+├── schema.prisma         Схема БД
+├── seed.js               Початкові дані + адмін
+└── dev.db                SQLite база даних
+proxy.ts                  Захист маршрутів (Edge Runtime)
 ```
 
 ---
@@ -284,12 +268,11 @@ AUTH_SECRET="your-secret-key-change-in-production"
 NOVA_POSHTA_API_KEY="your-np-api-key"
 ```
 
-### Перший запуск
+### Запуск
 ```bash
-cd demo/sprint2
 npm install
 npx prisma migrate dev
-node prisma/seed.js      # Заповнює товари + створює адміна
+node prisma/seed.js      # Створює товари + адміна
 npm run dev
 ```
 
