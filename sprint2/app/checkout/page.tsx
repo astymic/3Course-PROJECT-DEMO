@@ -47,6 +47,30 @@ export default function CheckoutPage() {
 
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState('')
+    const [autofilling, setAutofilling] = useState(false)
+    const [autofillMsg, setAutofillMsg] = useState('')
+
+    // Autofill from user profile
+    const handleAutofill = async () => {
+        setAutofilling(true)
+        setAutofillMsg('')
+        try {
+            const res = await fetch('/api/auth/me')
+            const user = await res.json()
+            if (!user) {
+                setAutofillMsg('⚠️ Спочатку увійдіть в кабінет')
+            } else {
+                if (user.name) setName(user.name)
+                if (user.phone) setPhone(user.phone)
+                if (user.email) setEmail(user.email)
+                setAutofillMsg('✅ Дані заповнено з профілю')
+            }
+        } catch {
+            setAutofillMsg('Помилка під час завантаження')
+        }
+        setAutofilling(false)
+        setTimeout(() => setAutofillMsg(''), 3000)
+    }
 
     // Phone: allow only digits, +, -, space
     const handlePhone = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,7 +230,26 @@ export default function CheckoutPage() {
 
                         {/* Customer info */}
                         <div className="bg-white rounded-xl border border-stone-100 p-6">
-                            <h2 className="font-bold text-stone-800 mb-4">Контактні дані</h2>
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="font-bold text-stone-800">Контактні дані</h2>
+                                <button
+                                    type="button"
+                                    onClick={handleAutofill}
+                                    disabled={autofilling}
+                                    className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 font-medium"
+                                >
+                                    {autofilling ? (
+                                        <span className="inline-block w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <span>👤</span>
+                                    )}
+                                    {autofilling ? 'Завантаження...' : 'Заповнити з профілю'}
+                                </button>
+                            </div>
+                            {autofillMsg && (
+                                <p className={`text-xs px-3 py-2 rounded-lg mb-3 ${autofillMsg.startsWith('✅') ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                                    }`}>{autofillMsg}</p>
+                            )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="md:col-span-2">
                                     <label className="block text-sm text-stone-500 mb-1.5">ПІБ *</label>
