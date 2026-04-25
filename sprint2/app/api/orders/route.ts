@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
     try {
@@ -15,11 +16,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Відсутні обов\'язкові поля' }, { status: 400 })
         }
 
+        // Try to link order to logged-in user
+        const token = request.cookies.get(COOKIE_NAME)?.value
+        const authPayload = token ? verifyToken(token) : null
+        const userId = authPayload?.userId ?? null
+
         const total = items.reduce((acc: number, i: { price: number; quantity: number }) =>
             acc + i.price * i.quantity, 0)
 
         const order = await prisma.order.create({
             data: {
+                userId,                                              // ← link to user if logged in
                 customerName, customerPhone, customerEmail: customerEmail ?? '',
                 deliveryMethod, paymentMethod,
                 npCity: npCity ?? '', npWarehouse: npWarehouse ?? '',
