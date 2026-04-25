@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import FilterPanel from '@/components/FilterPanel'
 import ProductCard from '@/components/ProductCard'
-import CartDropdown from '@/components/CartDropdown'
+import HeaderNav from '@/components/HeaderNav'
+
 
 // Constants OUTSIDE the component — no recreation on every render
 const COLORS = ['Чорний', 'Бежевий', 'Коричневий', 'Білий', 'Синій', 'Червоний']
@@ -83,18 +84,8 @@ export default function HomePage() {
             <h1 className="text-2xl font-bold text-stone-800 tracking-tight">LiLu</h1>
             <p className="text-xs text-stone-400 mt-0.5">Взуттєва фабрика</p>
           </div>
-          <nav className="hidden md:flex gap-8 text-sm text-stone-600 items-center">
-            <a href="#" className="hover:text-stone-900 transition-colors font-medium border-b-2 border-stone-800 pb-0.5">
-              Каталог
-            </a>
-            <a href="/account" className="hover:text-stone-900 transition-colors">
-              Мої замовлення
-            </a>
-            <a href="/admin" className="hover:text-stone-900 transition-colors">
-              Адмін-панель
-            </a>
-            <CartDropdown />
-          </nav>
+          <HeaderNav />
+
         </div>
       </header>
 

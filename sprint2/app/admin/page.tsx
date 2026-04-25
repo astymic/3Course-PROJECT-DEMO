@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import ProductTable from '@/components/admin/ProductTable'
 import ProductForm from '@/components/admin/ProductForm'
 
@@ -70,6 +71,8 @@ export default function AdminPage() {
             <header className="bg-stone-900 text-white px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <a href="/" className="text-stone-400 hover:text-white transition-colors text-sm">← Сайт</a>
+                    <Link href="/admin/orders" className="text-stone-400 hover:text-white transition-colors text-sm">Замовлення</Link>
+                    <Link href="/admin/users" className="text-stone-400 hover:text-white transition-colors text-sm">Користувачі</Link>
                     <div>
                         <h1 className="font-bold text-lg">LiLu Адмін</h1>
                         <p className="text-stone-400 text-xs">Управління товарами та залишками</p>

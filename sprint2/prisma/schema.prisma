@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ── Auth ────────────────────────────────────────────
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @default("")
+  phone     String?  @unique
+  email     String?  @unique
+  password  String
+  role      String   @default("user") // "user" | "admin"
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
 // ── Sprint 1 models ─────────────────────────────────
 model Category {
   id       Int       @id @default(autoincrement())
@@ -43,22 +55,20 @@ model ProductSize {
 // ── Sprint 2 models ─────────────────────────────────
 model Order {
   id              Int         @id @default(autoincrement())
-  // Customer info
+  userId          Int?
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   customerName    String
   customerPhone   String
   customerEmail   String      @default("")
-  // Delivery
-  deliveryMethod  String      // "nova_poshta" | "courier"
+  deliveryMethod  String
   npCity          String      @default("")
   npWarehouse     String      @default("")
   npWarehouseRef  String      @default("")
   address         String      @default("")
-  // Payment
-  paymentMethod   String      // "liqpay" | "cash_on_delivery"
-  paymentStatus   String      @default("pending") // "pending" | "paid" | "failed"
+  paymentMethod   String
+  paymentStatus   String      @default("pending")
   liqpayOrderId   String      @default("")
-  // Order
-  status          String      @default("new") // "new" | "processing" | "shipped" | "delivered" | "cancelled"
+  status          String      @default("new")
   total           Float
   notes           String      @default("")
   items           OrderItem[]
@@ -74,5 +84,5 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   size      Int
   quantity  Int
-  price     Float   // price at the time of order
+  price     Float
 }

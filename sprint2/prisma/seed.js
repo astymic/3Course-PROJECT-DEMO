@@ -1,11 +1,21 @@
 // Simple seed runner - CommonJS compatible
 const { PrismaClient } = require('@prisma/client')
+const { createHmac } = require('crypto')
 const prisma = new PrismaClient()
 
+const SECRET = process.env.AUTH_SECRET ?? 'lilu-dev-secret-CHANGE-IN-PRODUCTION'
+function hashPassword(password) {
+    return createHmac('sha256', SECRET).update(password).digest('hex')
+}
+
 async function main() {
+    // Delete in correct FK order
+    await prisma.orderItem.deleteMany()
+    await prisma.order.deleteMany()
     await prisma.productSize.deleteMany()
     await prisma.product.deleteMany()
     await prisma.category.deleteMany()
+
 
     const summer = await prisma.category.create({ data: { name: 'Літнє взуття', slug: 'summer', season: 'summer' } })
     const winter = await prisma.category.create({ data: { name: 'Зимове взуття', slug: 'winter', season: 'winter' } })
@@ -28,6 +38,24 @@ async function main() {
                 data: { productId: product.id, size, quantity: Math.floor(Math.random() * 8) + 1 }
             })
         }
+    }
+
+    // ── Seed admin user ─────────────────────────────────────────
+    const adminEmail = 'admin@lilu.ua'
+    const existing = await prisma.user.findUnique({ where: { email: adminEmail } })
+    if (!existing) {
+        await prisma.user.create({
+            data: {
+                name: 'Адміністратор',
+                email: adminEmail,
+                phone: null,
+                password: hashPassword('admin123'),
+                role: 'admin',
+            }
+        })
+        console.log('Admin created: admin@lilu.ua / admin123')
+    } else {
+        console.log('Admin already exists, skipping')
     }
 
     const count = await prisma.product.count()
