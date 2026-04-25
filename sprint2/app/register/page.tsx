@@ -28,7 +28,8 @@ export default function RegisterPage() {
         })
         const data = await res.json()
         if (!res.ok) { setError(data.error ?? 'Помилка'); setLoading(false); return }
-        router.push('/account')
+        // Pass claimedOrders count so the account page can show a welcome banner
+        router.push(data.claimedOrders > 0 ? `/account?claimed=${data.claimedOrders}` : '/account')
         router.refresh()
     }
 

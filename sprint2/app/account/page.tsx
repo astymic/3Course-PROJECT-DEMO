@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 type User = { id: number; name: string; phone: string | null; email: string | null; role: string }
@@ -24,6 +24,10 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AccountPage() {
     const router = useRouter()
+    const params = useSearchParams()
+    const claimedCount = parseInt(params.get('claimed') ?? '0')
+    const [showClaimedBanner, setShowClaimedBanner] = useState(claimedCount > 0)
+
     const [user, setUser] = useState<User | null>(null)
     const [orders, setOrders] = useState<Order[]>([])
     const [tab, setTab] = useState<'orders' | 'profile'>('orders')
@@ -106,6 +110,21 @@ export default function AccountPage() {
             </header>
 
             <div className="max-w-4xl mx-auto px-4 py-8">
+
+                {/* ── Claimed orders welcome banner ────────────────── */}
+                {showClaimedBanner && (
+                    <div className="mb-5 flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-5 py-4">
+                        <span className="text-green-600 text-xl flex-shrink-0">🎉</span>
+                        <div className="flex-1">
+                            <p className="font-semibold text-green-800 text-sm">
+                                Ласкаво просимо! Ми знайшли {claimedCount} {claimedCount === 1 ? 'замовлення' : 'замовлення(-ь)'} і прив'язали їх до вашого акаунту.
+                            </p>
+                            <p className="text-green-600 text-xs mt-0.5">Всі ваші попередні замовлення тепер відображаються нижче.</p>
+                        </div>
+                        <button onClick={() => setShowClaimedBanner(false)}
+                            className="text-green-400 hover:text-green-700 text-lg flex-shrink-0">✕</button>
+                    </div>
+                )}
                 {/* Tabs */}
                 <div className="flex gap-1 mb-6 bg-stone-100 p-1 rounded-xl w-fit">
                     {[

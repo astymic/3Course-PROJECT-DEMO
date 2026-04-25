@@ -36,8 +36,27 @@ export async function POST(request: NextRequest) {
             },
         })
 
+        // ── Claim guest orders ────────────────────────────────────────
+        // Find all orders placed without an account (userId = null) that
+        // match the new user's phone or email → link them automatically.
+        const claimConditions: object[] = []
+        if (phone) claimConditions.push({ customerPhone: phone })
+        if (email) claimConditions.push({ customerEmail: email })
+
+        const claimed = await prisma.order.updateMany({
+            where: {
+                userId: null,
+                OR: claimConditions,
+            },
+            data: { userId: user.id },
+        })
+
         const token = createToken(user.id, user.role)
-        const res = NextResponse.json({ ok: true, user: { id: user.id, name: user.name, role: user.role } })
+        const res = NextResponse.json({
+            ok: true,
+            user: { id: user.id, name: user.name, role: user.role },
+            claimedOrders: claimed.count,   // useful for showing a message on frontend
+        })
         res.cookies.set(COOKIE_NAME, token, COOKIE_OPTS)
         return res
     } catch (err) {
