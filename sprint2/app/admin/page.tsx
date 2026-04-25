@@ -73,6 +73,7 @@ export default function AdminPage() {
                     <a href="/" className="text-stone-400 hover:text-white transition-colors text-sm">← Сайт</a>
                     <Link href="/admin/orders" className="text-stone-400 hover:text-white transition-colors text-sm">Замовлення</Link>
                     <Link href="/admin/users" className="text-stone-400 hover:text-white transition-colors text-sm">Користувачі</Link>
+                    <Link href="/admin/chat" className="text-stone-400 hover:text-white transition-colors text-sm">💬 Чат</Link>
                     <div>
                         <h1 className="font-bold text-lg">LiLu Адмін</h1>
                         <p className="text-stone-400 text-xs">Управління товарами та залишками</p>

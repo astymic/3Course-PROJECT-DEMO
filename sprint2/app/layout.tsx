@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { CartProvider } from '@/context/CartContext'
+import ChatWidget from '@/components/ChatWidget'
 
 export const metadata: Metadata = {
   title: 'LiLu — Взуттєва фабрика',
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased">
         <CartProvider>
           {children}
+          <ChatWidget />
         </CartProvider>
 
         {/* ─── Tawk.to live chat ──────────────────────────────────────
