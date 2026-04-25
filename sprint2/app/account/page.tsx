@@ -22,6 +22,9 @@ const STATUS_COLORS: Record<string, string> = {
     cancelled: 'bg-red-100 text-red-700',
 }
 
+type ChatMsg = { id: number; text: string; sender: string; createdAt: string }
+type ChatSession = { id: number; status: string; createdAt: string; updatedAt: string; messages: ChatMsg[]; _count: { messages: number } }
+
 export default function AccountPage() {
     const router = useRouter()
     const params = useSearchParams()
@@ -30,8 +33,10 @@ export default function AccountPage() {
 
     const [user, setUser] = useState<User | null>(null)
     const [orders, setOrders] = useState<Order[]>([])
-    const [tab, setTab] = useState<'orders' | 'profile'>('orders')
+    const [chats, setChats] = useState<ChatSession[]>([])
+    const [tab, setTab] = useState<'orders' | 'profile' | 'support'>('orders')
     const [expanded, setExpanded] = useState<number | null>(null)
+    const [expandedChat, setExpandedChat] = useState<number | null>(null)
 
     // Profile edit state
     const [name, setName] = useState('')
@@ -52,6 +57,7 @@ export default function AccountPage() {
             setEmail(u.email ?? '')
         })
         fetch('/api/orders/mine').then(r => r.json()).then(d => setOrders(Array.isArray(d) ? d : []))
+        fetch('/api/chat/sessions').then(r => r.json()).then(d => setChats(Array.isArray(d) ? d : []))
     }, [router])
 
     const handleLogout = async () => {
@@ -128,10 +134,11 @@ export default function AccountPage() {
                 {/* Tabs */}
                 <div className="flex gap-1 mb-6 bg-stone-100 p-1 rounded-xl w-fit">
                     {[
-                        { key: 'orders', label: `📦 Мої замовлення (${orders.length})` },
+                        { key: 'orders', label: `📦 Замовлення (${orders.length})` },
+                        { key: 'support', label: `💬 Підтримка${chats.length > 0 ? ` (${chats.length})` : ''}` },
                         { key: 'profile', label: '⚙️ Профіль' },
                     ].map(t => (
-                        <button key={t.key} onClick={() => setTab(t.key as 'orders' | 'profile')}
+                        <button key={t.key} onClick={() => setTab(t.key as 'orders' | 'support' | 'profile')}
                             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.key ? 'bg-white shadow-sm text-stone-800' : 'text-stone-500 hover:text-stone-700'
                                 }`}>
                             {t.label}
@@ -190,6 +197,59 @@ export default function AccountPage() {
                                                         {order.paymentStatus === 'paid' ? 'Оплачено' : 'Очікує оплату'}
                                                     </span>
                                                 </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )
+                )}
+
+                {/* ── Support Tab ────────────────────────────── */}
+                {tab === 'support' && (
+                    chats.length === 0 ? (
+                        <div className="text-center py-16 text-stone-400">
+                            <div className="text-5xl mb-3">💬</div>
+                            <p className="font-medium text-stone-600">Звернень до підтримки ще немає</p>
+                            <p className="text-sm mt-1">Скористайтесь чатом внизу сторінки</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {chats.map(chat => {
+                                const isOpen = expandedChat === chat.id
+                                return (
+                                    <div key={chat.id} className="bg-white rounded-xl border border-stone-100 overflow-hidden shadow-sm">
+                                        <button type="button" onClick={() => setExpandedChat(isOpen ? null : chat.id)}
+                                            className="w-full flex items-center justify-between px-5 py-4 hover:bg-stone-50 transition-colors text-left">
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-bold text-stone-800 text-sm">Звернення #{chat.id}</span>
+                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${chat.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-stone-100 text-stone-500'}`}>
+                                                    {chat.status === 'open' ? '🟢 Відкрито' : '⬤ Закрито'}
+                                                </span>
+                                                <span className="text-stone-400 text-xs">{chat._count.messages} пов.</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs text-stone-400">{new Date(chat.updatedAt).toLocaleDateString('uk-UA')}</span>
+                                                <span className="text-stone-400 text-xs">{isOpen ? '▲' : '▼'}</span>
+                                            </div>
+                                        </button>
+                                        {isOpen && (
+                                            <div className="border-t border-stone-100 px-5 py-4 bg-stone-50 space-y-2 max-h-64 overflow-y-auto">
+                                                {chat.messages.map(m => (
+                                                    <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                        <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${m.sender === 'user' ? 'bg-amber-500 text-stone-900' :
+                                                                m.sender === 'admin' ? 'bg-stone-800 text-white' :
+                                                                    'bg-white border border-stone-200 text-stone-700'}`}>
+                                                            {m.sender !== 'user' && (
+                                                                <p className={`text-xs font-semibold mb-0.5 ${m.sender === 'admin' ? 'text-amber-400' : 'text-amber-600'}`}>
+                                                                    {m.sender === 'admin' ? 'LiLu Спеціаліст' : 'LiLu Бот'}
+                                                                </p>
+                                                            )}
+                                                            <p>{m.text}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
                                     </div>

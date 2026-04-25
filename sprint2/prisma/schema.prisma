@@ -90,7 +90,8 @@ model OrderItem {
 // ── Live Support Chat ────────────────────────────────────────
 model ChatSession {
   id         Int           @id @default(autoincrement())
-  token      String        @unique  // random UUID stored in user localStorage
+  token      String        @unique
+  userId     Int?
   guestName  String        @default("Гість")
   guestEmail String        @default("")
   status     String        @default("open")  // open | closed
