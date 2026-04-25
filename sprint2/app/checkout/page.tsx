@@ -4,6 +4,18 @@ import { useCart } from '@/context/CartContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
+// +2 business days from today (skip Sat/Sun)
+function getEstimatedDelivery(): string {
+    const d = new Date()
+    let added = 0
+    while (added < 2) {
+        d.setDate(d.getDate() + 1)
+        const day = d.getDay()
+        if (day !== 0 && day !== 6) added++
+    }
+    return d.toLocaleDateString('uk-UA', { day: '2-digit', month: 'long', year: 'numeric' })
+}
+
 type NpCity = { Ref: string; Description: string }
 type NpWarehouse = { Ref: string; Description: string; Number: string }
 
@@ -109,13 +121,18 @@ export default function CheckoutPage() {
         setSubmitting(true)
         setError('')
 
+        const estimatedDelivery = delivery === 'courier' ? getEstimatedDelivery() : undefined
+
         const body = {
             customerName: name, customerPhone: phone, customerEmail: email,
             deliveryMethod: delivery, paymentMethod: payment,
             npCity: selectedCity?.Description ?? '',
             npWarehouse: selectedWh?.Description ?? '',
             npWarehouseRef: selectedWh?.Ref ?? '',
-            address, notes,
+            address: delivery === 'courier'
+                ? `${address}${estimatedDelivery ? ` (доставка до ${estimatedDelivery})` : ''}`
+                : address,
+            notes,
             items: items.map(i => ({
                 productId: i.productId, size: i.size, quantity: i.quantity, price: i.price,
             })),
@@ -129,6 +146,31 @@ export default function CheckoutPage() {
             })
             const order = await res.json()
             if (!res.ok) { setError(order.error ?? 'Помилка'); setSubmitting(false); return }
+
+            // Send email confirmation (fire-and-forget)
+            if (email) {
+                fetch('/api/email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'order_confirmation',
+                        to: email,
+                        order: {
+                            id: order.id,
+                            customerName: name,
+                            total: order.total,
+                            deliveryMethod: delivery,
+                            npCity: selectedCity?.Description ?? '',
+                            npWarehouse: selectedWh?.Description ?? '',
+                            address,
+                            paymentMethod: payment,
+                            estimatedDelivery,
+                            items: items.map(i => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
+                        },
+                    }),
+                }).catch(console.error) // Don't block navigation on email failure
+            }
+
             clear()
             router.push(`/order/${order.id}`)
         } catch {
@@ -212,8 +254,8 @@ export default function CheckoutPage() {
                                     <button key={opt.value} type="button"
                                         onClick={() => setDelivery(opt.value as 'nova_poshta' | 'courier')}
                                         className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${delivery === opt.value
-                                                ? 'border-stone-800 bg-stone-800 text-white'
-                                                : 'border-stone-200 text-stone-600 hover:border-stone-400'
+                                            ? 'border-stone-800 bg-stone-800 text-white'
+                                            : 'border-stone-200 text-stone-600 hover:border-stone-400'
                                             }`}>
                                         {opt.label}
                                     </button>
@@ -315,10 +357,18 @@ export default function CheckoutPage() {
                             )}
 
                             {delivery === 'courier' && (
-                                <div>
-                                    <label className="block text-sm text-stone-500 mb-1.5">Адреса доставки *</label>
-                                    <input value={address} onChange={e => setAddress(e.target.value)}
-                                        className={inputCls} placeholder="Вулиця, будинок, квартира" />
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm text-stone-500 mb-1.5">Адреса доставки *</label>
+                                        <input value={address} onChange={e => setAddress(e.target.value)}
+                                            className={inputCls} placeholder="Місто, вулиця, будинок, квартира" />
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                        <span className="text-amber-600">🗓</span>
+                                        <span className="text-xs text-stone-600">
+                                            Орієнтовна дата доставки: <strong className="text-stone-800">{getEstimatedDelivery()}</strong> (+2 робочі дні)
+                                        </span>
+                                    </div>
                                 </div>
                             )}
                         </div>

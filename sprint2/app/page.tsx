@@ -87,6 +87,9 @@ export default function HomePage() {
             <a href="#" className="hover:text-stone-900 transition-colors font-medium border-b-2 border-stone-800 pb-0.5">
               Каталог
             </a>
+            <a href="/account" className="hover:text-stone-900 transition-colors">
+              Мої замовлення
+            </a>
             <a href="/admin" className="hover:text-stone-900 transition-colors">
               Адмін-панель
             </a>
