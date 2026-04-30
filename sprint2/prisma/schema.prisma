@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Auth ────────────────────────────────────────────
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @default("")
+  phone     String?  @unique
+  email     String?  @unique
+  password  String
+  role      String   @default("user") // "user" | "admin"
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+// ── Sprint 1 models ─────────────────────────────────
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  slug     String    @unique
+  season   String
+  products Product[]
+}
+
+model Product {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  material    String
+  color       String
+  imageUrl    String        @default("/placeholder.jpg")
+  isActive    Boolean       @default(true)
+  categoryId  Int
+  category    Category      @relation(fields: [categoryId], references: [id])
+  sizes       ProductSize[]
+  orderItems  OrderItem[]
+  createdAt   DateTime      @default(now())
+}
+
+model ProductSize {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      Int
+  quantity  Int     @default(0)
+}
+
+// ── Sprint 2 models ─────────────────────────────────
+model Order {
+  id              Int         @id @default(autoincrement())
+  userId          Int?
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerName    String
+  customerPhone   String
+  customerEmail   String      @default("")
+  deliveryMethod  String
+  npCity          String      @default("")
+  npWarehouse     String      @default("")
+  npWarehouseRef  String      @default("")
+  address         String      @default("")
+  paymentMethod   String
+  paymentStatus   String      @default("pending")
+  liqpayOrderId   String      @default("")
+  status          String      @default("new")
+  total           Float
+  notes           String      @default("")
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  size      Int
+  quantity  Int
+  price     Float
+}
+
+// ── Live Support Chat ────────────────────────────────────────
+model ChatSession {
+  id         Int           @id @default(autoincrement())
+  token      String        @unique
+  userId     Int?
+  guestName  String        @default("Гість")
+  guestEmail String        @default("")
+  status     String        @default("open")  // open | closed
+  messages   ChatMessage[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model ChatMessage {
+  id        Int         @id @default(autoincrement())
+  sessionId Int
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  text      String
+  sender    String      // "user" | "admin"
+  createdAt DateTime    @default(now())
+}
