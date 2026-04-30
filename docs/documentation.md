@@ -1,7 +1,8 @@
 # LiLu — Взуттєва фабрика: Технічна документація
 
 > **Проєкт:** LiLu E-Commerce Platform
-> **Стек:** Next.js 16, Prisma 5, SQLite, Tailwind CSS
+> **Стек:** Next.js 16, Prisma 5, PostgreSQL (Supabase), Tailwind CSS
+> **Хостинг:** Vercel
 
 ---
 
@@ -49,10 +50,11 @@ proxy.ts                  Захист маршрутів (Edge Runtime)
 | Фреймворк | Next.js | 16.2.4 |
 | Стилізація | Tailwind CSS | 3.x |
 | ORM | Prisma | 5.22 |
-| База даних | SQLite | — |
+| База даних | PostgreSQL (Supabase) | — |
 | Авторизація | HMAC-SHA256 + httpOnly cookie | — |
 | Edge Runtime | Web Crypto API | — |
-| Реальний час | Polling (setInterval 3s) | — |
+| Реальний час | Polling (setInterval 3 сек) | — |
+| Хостинг | Vercel | — |
 
 ---
 
@@ -263,12 +265,17 @@ Email:  admin@lilu.ua
 
 ### Змінні оточення (`.env`)
 ```env
-DATABASE_URL="file:./prisma/dev.db"
-AUTH_SECRET="your-secret-key-change-in-production"
+# PostgreSQL (Supabase)
+DATABASE_URL="postgresql://postgres.[ref]:[pass]@pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.[ref]:[pass]@pooler.supabase.com:5432/postgres"
+AUTH_SECRET="your-secret-key-min-32-chars"
 NOVA_POSHTA_API_KEY="your-np-api-key"
+LIQPAY_PUBLIC_KEY="your-liqpay-public-key"
+LIQPAY_PRIVATE_KEY="your-liqpay-private-key"
+NEXT_PUBLIC_APP_URL="https://lilu-shoes.com"
 ```
 
-### Запуск
+### Запуск (локально)
 ```bash
 npm install
 npx prisma migrate dev
@@ -276,9 +283,12 @@ node prisma/seed.js      # Створює товари + адміна
 npm run dev
 ```
 
+### Деплой на продакшн
+Див. [`docs/deployment_guide.md`](./deployment_guide.md) — повний покроковий гайд.
+
 ### Адмін за замовчуванням
 ```
-URL:    http://localhost:3000/admin
+URL:    https://lilu-shoes.com/admin
 Email:  admin@lilu.ua
 Пароль: admin123
 ```

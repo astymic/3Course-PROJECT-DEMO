@@ -10,17 +10,26 @@
   --color-foreground: var(--foreground);
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden;
 }
 
-/* Force black text in all form fields */
+/* ── Form fields ─────────────────────────────────────── */
 input,
 textarea,
 select {
   color: #111827 !important;
+  /* Prevent zoom on focus (iOS) */
+  font-size: 16px;
 }
 
 input::placeholder,
@@ -28,3 +37,56 @@ textarea::placeholder {
   color: #9ca3af !important;
 }
 
+/* Touch-friendly tap targets */
+button, a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Admin tables — horizontal scroll on mobile ───────── */
+.admin-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Chat widget — safe bottom on iOS ───────────────────  */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .chat-bubble {
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
+  .chat-window {
+    bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* ── Mobile nav overlay ─────────────────────────────── */
+@media (max-width: 640px) {
+  /* Compact header links */
+  .header-links {
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+  /* Stack form grids */
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+  /* Full-width buttons on mobile */
+  .btn-mobile-full {
+    width: 100%;
+    justify-content: center;
+  }
+  /* Reduce padding */
+  .page-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* ── PageSpeed: prefers-reduced-motion ──────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
