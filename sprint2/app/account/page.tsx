@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -25,7 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
 type ChatMsg = { id: number; text: string; sender: string; createdAt: string }
 type ChatSession = { id: number; status: string; createdAt: string; updatedAt: string; messages: ChatMsg[]; _count: { messages: number } }
 
-export default function AccountPage() {
+function AccountContent() {
     const router = useRouter()
     const params = useSearchParams()
     const claimedCount = parseInt(params.get('claimed') ?? '0')
@@ -329,5 +329,13 @@ export default function AccountPage() {
                 )}
             </div>
         </main>
+    )
+}
+
+export default function AccountPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-stone-400">Завантаження...</div>}>
+            <AccountContent />
+        </Suspense>
     )
 }
