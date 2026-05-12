@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -19,7 +19,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     cancelled: { label: 'Скасовано', color: 'bg-red-100 text-red-700' },
 }
 
-export default function OrderPage() {
+function OrderContent() {
     const params = useParams()
     const searchParams = useSearchParams()
     const [order, setOrder] = useState<Order | null>(null)
@@ -112,5 +112,13 @@ export default function OrderPage() {
                 </div>
             </div>
         </main>
+    )
+}
+
+export default function OrderPage() {
+    return (
+        <Suspense fallback={<main className="min-h-screen bg-stone-50 flex items-center justify-center"><div className="text-stone-400">Завантаження...</div></main>}>
+            <OrderContent />
+        </Suspense>
     )
 }

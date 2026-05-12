@@ -1,9 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function LoginPage() {
+function LoginContent() {
     const router = useRouter()
     const params = useSearchParams()
     const redirect = params.get('redirect') ?? '/'
@@ -76,5 +76,13 @@ export default function LoginPage() {
                 </div>
             </div>
         </main>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-stone-50 flex items-center justify-center text-stone-400">Завантаження...</div>}>
+            <LoginContent />
+        </Suspense>
     )
 }
