@@ -1,9 +1,10 @@
 'use client'
 
 type Size = { id: number; size: number; quantity: number }
-type Category = { id: number; name: string }
+type Category = { id: number; name: string; slug: string }
 type Product = {
-    id: number; name: string; price: number; color: string
+    id: number; name: string; description: string; price: number
+    material: string; color: string; imageUrl: string
     isActive: boolean; category: Category; sizes: Size[]
 }
 
