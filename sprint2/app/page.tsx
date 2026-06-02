@@ -20,6 +20,7 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   // Individual primitive state — avoids object reference change on every render
   const [category, setCategory] = useState('')
@@ -121,9 +122,22 @@ export default function HomePage() {
           {/* Products grid */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-stone-700">
-                {loading ? 'Завантаження...' : `${products.length} товарів`}
-              </h2>
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-lg font-semibold text-stone-700">
+                  {loading ? 'Завантаження...' : `${products.length} товарів`}
+                </h2>
+                {/* Mobile Filter Button */}
+                <button
+                  onClick={() => setShowMobileFilters(true)}
+                  className="lg:hidden flex items-center gap-1.5 text-xs bg-stone-200 hover:bg-stone-300 text-stone-700 px-3 py-1.5 rounded-lg transition-all font-medium cursor-pointer"
+                >
+                  <span>🔍</span>
+                  <span>Фільтри</span>
+                  {hasActiveFilters && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  )}
+                </button>
+              </div>
               {hasActiveFilters && (
                 <button
                   onClick={() => handleFilterChange({
@@ -156,6 +170,61 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Filters Drawer */}
+      {showMobileFilters && (
+        <div className="fixed inset-0 z-50 flex justify-start">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs transition-opacity"
+            onClick={() => setShowMobileFilters(false)}
+          />
+          
+          {/* Drawer Content */}
+          <div className="relative w-80 max-w-full bg-stone-50 h-full shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-out overflow-hidden">
+            <div className="flex items-center justify-between p-4 bg-white border-b border-stone-200">
+              <span className="font-bold text-stone-800 text-base">Фільтри</span>
+              <button 
+                onClick={() => setShowMobileFilters(false)}
+                className="text-stone-400 hover:text-stone-700 text-xl p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              <FilterPanel
+                categories={categories}
+                colors={COLORS}
+                sizes={SIZES}
+                filters={filters}
+                onChange={handleFilterChange}
+              />
+            </div>
+
+            <div className="p-4 bg-white border-t border-stone-200 flex gap-2">
+              {hasActiveFilters && (
+                <button
+                  onClick={() => {
+                    handleFilterChange({
+                      category: '', color: '', size: '', minPrice: '', maxPrice: ''
+                    });
+                  }}
+                  className="flex-1 text-center py-2.5 rounded-xl border border-stone-300 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors"
+                >
+                  Скинути
+                </button>
+              )}
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="flex-1 bg-stone-800 hover:bg-stone-700 text-white text-center py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              >
+                Застосувати
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
