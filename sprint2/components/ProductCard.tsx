@@ -36,9 +36,17 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className={`bg-white rounded-xl border border-stone-100 overflow-hidden hover:shadow-md transition-all duration-200 group flex flex-col ${soldOut ? 'opacity-60' : ''}`}>
             {/* Image */}
             <div className="aspect-square bg-gradient-to-br from-stone-100 to-stone-200 relative overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center text-5xl group-hover:scale-110 transition-transform duration-300">
-                    👟
-                </div>
+                {product.imageUrl ? (
+                    <img 
+                        src={product.imageUrl} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-5xl group-hover:scale-110 transition-transform duration-300">
+                        👟
+                    </div>
+                )}
                 {soldOut && (
                     <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                         Немає
