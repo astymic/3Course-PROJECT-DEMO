@@ -61,8 +61,12 @@ export default function CartDropdown() {
                                 {items.map(item => (
                                     <div key={`${item.productId}-${item.size}`}
                                         className="flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-stone-100 to-stone-200 rounded-lg flex-shrink-0 flex items-center justify-center text-lg">
-                                            👟
+                                        <div className="w-10 h-10 bg-gradient-to-br from-stone-100 to-stone-200 rounded-lg flex-shrink-0 flex items-center justify-center text-lg overflow-hidden">
+                                            {item.imageUrl ? (
+                                                <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                '👟'
+                                            )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-semibold text-stone-800 truncate">{item.name}</p>
