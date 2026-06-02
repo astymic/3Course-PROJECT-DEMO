@@ -37,11 +37,9 @@ textarea::placeholder {
   color: #9ca3af !important;
 }
 
-/* Touch-friendly tap targets */
+/* Clean tap target transitions */
 button, a {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
+  transition: all 0.2s ease;
 }
 
 /* ── Admin tables — horizontal scroll on mobile ───────── */
