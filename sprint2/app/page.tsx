@@ -129,7 +129,7 @@ export default function HomePage() {
                 {/* Mobile Filter Button */}
                 <button
                   onClick={() => setShowMobileFilters(true)}
-                  className="lg:hidden flex items-center gap-1.5 text-xs bg-stone-200 hover:bg-stone-300 text-stone-700 px-3 py-1.5 rounded-lg transition-all font-medium cursor-pointer"
+                  className="lg:!hidden flex items-center gap-1.5 text-xs bg-stone-200 hover:bg-stone-300 text-stone-700 px-3 py-1.5 rounded-lg transition-all font-medium cursor-pointer"
                 >
                   <span>🔍</span>
                   <span>Фільтри</span>
